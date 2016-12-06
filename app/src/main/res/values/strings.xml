@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Map Application</string>
+    <string name="title_activity_maps">Explore</string>
+    <string name="action_favorite">Add Location</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_here">My Location</string>
+    <string name="title_activity_create">CreateActivity</string>
+    <string name="createReportButton">Shout It</string>
+    <string name="createHeading">Shout Your Microaggression</string>
+    <string name="createInstructions">NOTE: If a crime has been committed, call the police.\n\nDescribe what happened, leaving out names and other identifying details.</string>
+    <string name="createCancelButton">Cancel</string>
+</resources>
