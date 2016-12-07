@@ -44,6 +44,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MapsActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks,
@@ -61,7 +63,7 @@ public class MapsActivity extends AppCompatActivity implements
     private LocationManager locationManager;
     private boolean connected = false;
     private GoogleApiClient client;
-    private ArrayList<Marker> markers = new ArrayList<>();
+    private Map<Marker, Integer> markers = new HashMap<>();
 
     /*
     protected void onCreate(Bundle savedInstanceState)
@@ -110,10 +112,14 @@ public class MapsActivity extends AppCompatActivity implements
         switch (item.getItemId()) {
             case R.id.action_settings:
                 // User chose the "Settings" item, show the app settings UI...
-                // Todo: Fill in this stub
+                Intent aboutIntent = new Intent(MapsActivity.this, AboutActivity.class);
+                MapsActivity.this.startActivity(aboutIntent);
                 return true;
 
             case R.id.action_favorite:
+                //Focus camera on user location
+                followingUserLocation = true;
+                safeLocationUpdate();
                 // User chose the "Add Marker" item, add a new location somewhere
                 Intent myIntent = new Intent(MapsActivity.this, CreateActivity.class);
                 //Start activity to create new marker, sending intent with location
@@ -148,9 +154,6 @@ public class MapsActivity extends AppCompatActivity implements
         mapReady = true;
         mMap.setOnCameraMoveStartedListener(this);
         mMap.setOnMarkerClickListener(this);
-        if (connected) {
-            Toast.makeText(getApplicationContext(), "DEBUG: Connected and map ready", Toast.LENGTH_SHORT).show();
-        }
         populateMarkers();
     }
 
@@ -171,7 +174,6 @@ public class MapsActivity extends AppCompatActivity implements
     @Override
     public void onResume() {
         super.onResume();
-        Toast.makeText(getApplicationContext(), "DEBUG: Resumed", Toast.LENGTH_SHORT).show();
         client.connect();
         Action viewAction = Action.newAction(
                 Action.TYPE_VIEW, // TODO: choose an action type.
@@ -185,7 +187,6 @@ public class MapsActivity extends AppCompatActivity implements
         );
         AppIndex.AppIndexApi.start(client, viewAction);
         if (mMap!= null&& mapReady) {
-            Toast.makeText(getApplicationContext(), "DEBUG: Populating", Toast.LENGTH_SHORT).show();
             populateMarkers();
         }
 
@@ -271,7 +272,6 @@ public class MapsActivity extends AppCompatActivity implements
     public void moveCameraToUser() {
         // If we got a location, then move the camera
         try {
-            Toast.makeText(getApplicationContext(), "DEBUG: Moving camera", Toast.LENGTH_SHORT).show();
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()), (float) 14.0));
         }
         catch (Exception e) {
@@ -299,7 +299,6 @@ public class MapsActivity extends AppCompatActivity implements
             request.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
             request.setInterval(10000);
             LocationServices.FusedLocationApi.requestLocationUpdates(client,request,(LocationListener)this);
-            Toast.makeText(getApplicationContext(), "DEBUG: Updates requested", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -310,7 +309,6 @@ public class MapsActivity extends AppCompatActivity implements
      */
     @Override
     public void onLocationChanged(Location location) {
-        Toast.makeText(getApplicationContext(), "DEBUG: Location changed!", Toast.LENGTH_SHORT).show();
         safeLocationUpdate();
     }
 
@@ -322,8 +320,6 @@ public class MapsActivity extends AppCompatActivity implements
     @Override
     public void onCameraMoveStarted(int reason) {
         if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
-            Toast.makeText(this, "DEBUG: The user gestured on the map.",
-                    Toast.LENGTH_SHORT).show();
             followingUserLocation = false;
         } else if (reason == GoogleMap.OnCameraMoveStartedListener
                 .REASON_API_ANIMATION) {
@@ -393,7 +389,6 @@ public class MapsActivity extends AppCompatActivity implements
             //Get url and connect
             URL url = new URL(urlString);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            Toast.makeText(getApplicationContext(), "DEBUG: URL connected", Toast.LENGTH_SHORT).show();
             connection.setDoInput(true);
             connection.setDoOutput(true);
             connection.setConnectTimeout(15000);
@@ -422,7 +417,7 @@ public class MapsActivity extends AppCompatActivity implements
                         .position(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude())));
 
 
-            // Break apart what we got back
+            // Break apart what we got back, turn into marker
             String[] results = resultString.split("#");
             for(int i = 1; i < results.length; i++) {
 
@@ -432,8 +427,10 @@ public class MapsActivity extends AppCompatActivity implements
                         .zIndex(10)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_accessibility_black_24dp))
                         .position(new LatLng(Double.parseDouble(words[2]),Double.parseDouble(words[3])))
-                        .title(words[0]));
-                markers.add(newMarker);
+                        .alpha(Float.parseFloat(words[4]) * (float)0.2)
+                        .title(words[1]));
+                newMarker.setTag(Integer.parseInt(words[4]));
+                markers.put(newMarker,Integer.parseInt(words[0]));
 
             }
         }
@@ -444,6 +441,14 @@ public class MapsActivity extends AppCompatActivity implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        return false;
+        Intent myIntent = new Intent(MapsActivity.this, ReadActivity.class);
+        //Start activity to read marker, sending data to it
+        myIntent.putExtra("tuid",markers.get(marker));
+        myIntent.putExtra("description",marker.getTitle());
+        myIntent.putExtra("lat", marker.getPosition().latitude);
+        myIntent.putExtra("lng", marker.getPosition().longitude);
+        myIntent.putExtra("hp", (Integer)(marker.getTag()));
+        MapsActivity.this.startActivity(myIntent);
+        return true;
     }
 }

@@ -11,7 +11,7 @@
         android:id="@+id/action_favorite"
         android:icon="@drawable/ic_add_location_white_48dp"
         android:title="@string/action_favorite"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="always"/>
     <!-- Settings, should always be in the overflow -->
     <item android:id="@+id/action_settings"
         android:title="@string/action_settings"
